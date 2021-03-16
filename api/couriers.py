@@ -29,10 +29,11 @@ class CouriersResource(Resource):
         except Exception:
             abort(400)
 
-        make_response(jsonify({'courier_id': courier.courier_id,
-                               'courier_type': courier.courier_type,
-                               'regions': courier.regions,
-                               'working_hours': courier.working_hours}), 200)
+        # make_response(jsonify({'courier_id': courier.courier_id,
+        #                        'courier_type': courier.courier_type,
+        #                        'regions': courier.regions,
+        #                        'working_hours': courier.working_hours}), 200)
+        make_response(jsonify({'ok': 'ok'}), 200)
 
 
 class CouriersListResource(Resource):
@@ -47,20 +48,16 @@ class CouriersListResource(Resource):
                     or 'working_hours' not in dataset or len(dataset['working_hours']) == 0:
                 unsuccessful.append({'id': dataset['courier_id']})
                 continue
-
-            try:
-                courier = Courier(
-                    courier_id=dataset['courier_id'],
-                    courier_type=dataset['courier_type'],
-                    regions=dataset['regions'],
-                    working_hours=dataset['working_hours']
-                )
-                session.add(courier)
-                session.commit()
-            except Exception:
-                unsuccessful.append({'id': dataset['courier_id']})
+            courier = Courier(
+                courier_id=dataset['courier_id'],
+                courier_type=dataset['courier_type'],
+                regions=dataset['regions'],
+                working_hours=dataset['working_hours']
+            )
+            session.add(courier)
             successful.append({'id': dataset['courier_id']})
         if len(unsuccessful) > 0:
             return make_response(jsonify({'validation_error': {'couriers': unsuccessful}}), 400)
         else:
+            session.commit()
             return make_response(jsonify({'couriers': successful}), 201)
