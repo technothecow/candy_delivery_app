@@ -6,7 +6,33 @@ from data.db_session import create_session
 
 
 class CouriersResource(Resource):
-    pass
+    def patch(self, courier_id):
+        session = create_session()
+        courier = session.query(Courier).filter(Courier.courier_id == courier_id).scalar()
+        if courier is None:
+            abort(404)
+
+        args = request.json
+        for key in args:
+            if len(args[key]) != 0:
+                if key == 'courier_type':
+                    courier.courier_type = args['courier_type']
+                elif key == 'regions':
+                    courier.courier_type = args['regions']
+                elif key == 'working_hours':
+                    courier.courier_type = args['working_hours']
+            else:
+                abort(400)
+
+        try:
+            session.commit()
+        except Exception:
+            abort(400)
+
+        make_response(jsonify({'courier_id': courier.courier_id,
+                               'courier_type': courier.courier_type,
+                               'regions': courier.regions,
+                               'working_hours': courier.working_hours}), 200)
 
 
 class CouriersListResource(Resource):

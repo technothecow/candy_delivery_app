@@ -10,4 +10,5 @@ api = Api(app)
 if __name__ == '__main__':
     global_init('db/database.db')
     api.add_resource(CouriersListResource, '/couriers')
+    api.add_resource(CouriersResource, '/couriers/<int:courier_id>')
     app.run(debug=True)
