@@ -18,22 +18,22 @@ class CouriersResource(Resource):
                 if key == 'courier_type':
                     courier.courier_type = args['courier_type']
                 elif key == 'regions':
-                    courier.courier_type = args['regions']
+                    courier.regions = args['regions']
                 elif key == 'working_hours':
-                    courier.courier_type = args['working_hours']
+                    courier.working_hours = args['working_hours']
             else:
                 abort(400)
 
         try:
             session.commit()
-        except Exception:
+        except Exception as e:
+            print(e)
             abort(400)
 
-        # make_response(jsonify({'courier_id': courier.courier_id,
-        #                        'courier_type': courier.courier_type,
-        #                        'regions': courier.regions,
-        #                        'working_hours': courier.working_hours}), 200)
-        make_response(jsonify({'ok': 'ok'}), 200)
+        return {'courier_id': courier.courier_id,
+                'courier_type': courier.courier_type,
+                'regions': courier.regions,
+                'working_hours': courier.working_hours}, 200
 
 
 class CouriersListResource(Resource):
