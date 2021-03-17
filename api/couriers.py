@@ -54,6 +54,7 @@ class CouriersListResource(Resource):
                 regions=dataset['regions'],
                 working_hours=dataset['working_hours']
             )
+            print(dataset['courier_id'])
             session.add(courier)
             successful.append({'id': dataset['courier_id']})
         if len(unsuccessful) > 0:

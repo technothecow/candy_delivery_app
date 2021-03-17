@@ -2,7 +2,7 @@ from sqlalchemy.orm import relation
 from sqlalchemy_serializer import SerializerMixin
 from .db_session import SqlAlchemyBase
 from sqlalchemy import Column
-from sqlalchemy.sql.sqltypes import Integer, String, JSON, Float
+from sqlalchemy.sql.sqltypes import Integer, String, JSON, Float, DateTime
 
 
 class Courier(SqlAlchemyBase, SerializerMixin):
@@ -14,5 +14,7 @@ class Courier(SqlAlchemyBase, SerializerMixin):
     working_hours = Column(JSON, nullable=False)
     rating = Column(Float)
     earnings = Column(Integer)
+    assign_time = Column(DateTime)
+    transfers = Column(Integer, default=0)
 
     orders = relation('Order', back_populates='courier')
