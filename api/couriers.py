@@ -53,7 +53,7 @@ class CouriersResource(Resource):
         average_time = [courier.delivery_time_for_regions[i][1] / courier.delivery_time_for_regions[i][0]
                         for i in courier.delivery_time_for_regions.keys()]
         if len(average_time) > 0:
-            response['rating'] = (60 * 60 - min(min(average_time), 60 * 60)) / (60 * 60) * 5
+            response['rating'] = round((60 * 60 - min(min(average_time), 60 * 60)) / (60 * 60) * 5, 2)
 
         response['earnings'] = courier.earnings
         return response, 200

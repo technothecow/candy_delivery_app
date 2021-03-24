@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restful import Api
+from waitress import serve
 
 from api.orders import OrdersAssignment, OrdersListResource, OrdersCompletion
 from api.couriers import CouriersListResource, CouriersResource
@@ -15,4 +16,4 @@ if __name__ == '__main__':
     api.add_resource(OrdersListResource, '/orders')
     api.add_resource(OrdersAssignment, '/orders/assign')
     api.add_resource(OrdersCompletion, '/orders/complete')
-    app.run(debug=True)
+    serve(app, host='0.0.0.0', port=5000)
