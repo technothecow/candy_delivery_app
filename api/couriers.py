@@ -43,20 +43,34 @@ class CouriersListResource(Resource):
         successful = list()
         unsuccessful = list()
         for dataset in args:
-            if 'courier_type' not in dataset or len(dataset['courier_type']) == 0 \
-                    or 'regions' not in dataset or len(dataset['regions']) == 0 \
-                    or 'working_hours' not in dataset or len(dataset['working_hours']) == 0:
-                unsuccessful.append({'id': dataset['courier_id']})
+
+            errors = list()
+            if 'courier_type' not in dataset:
+                errors.append('Courier type must be specified.')
+            elif dataset['courier_type'] not in ('foot', 'car', 'bike'):
+                errors.append('Courier type must be one of following values: foot, car, bike.')
+            if 'regions' not in dataset:
+                errors.append('Courier regions must be specified.')
+            elif len(dataset['regions']) == 0:
+                errors.append('At least one region is required.')
+            if 'working_hours' not in dataset:
+                errors.append('Courier working hours must be specified')
+            elif len(dataset['working_hours']) == 0:
+                errors.append('At least one time slot is required.')
+
+            if len(errors) > 0:
+                unsuccessful.append({'id': dataset['courier_id'], 'errors': errors})
                 continue
+
             courier = Courier(
                 courier_id=dataset['courier_id'],
                 courier_type=dataset['courier_type'],
                 regions=dataset['regions'],
                 working_hours=dataset['working_hours']
             )
-            print(dataset['courier_id'])
             session.add(courier)
             successful.append({'id': dataset['courier_id']})
+
         if len(unsuccessful) > 0:
             return make_response(jsonify({'validation_error': {'couriers': unsuccessful}}), 400)
         else:
