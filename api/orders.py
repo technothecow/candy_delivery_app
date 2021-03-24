@@ -10,6 +10,8 @@ from data.db_session import create_session
 
 
 class OrdersAssignment(Resource):
+    """/orders/assign"""
+
     def post(self):
         courier_id = request.json['courier_id']
         session = create_session()
@@ -45,17 +47,42 @@ class OrdersAssignment(Resource):
 
 
 class OrdersListResource(Resource):
+    """/orders"""
+
     def post(self):
         args = request.json['data']
         session = create_session()
         successful = list()
         unsuccessful = list()
         for dataset in args:
-            if 'weight' not in dataset or not (0.01 <= dataset['weight'] <= 50) \
-                    or 'region' not in dataset \
-                    or 'delivery_hours' not in dataset or len(dataset['delivery_hours']) == 0:
-                unsuccessful.append({'id': dataset['order_id']})
+
+            errors = list()
+
+            if 'weight' not in dataset:
+                errors.append('Weight must be specified.')
+            elif not isinstance(dataset['weight'], float):
+                errors.append('Weight must be float.')
+            elif dataset['weight'] < 0.01:
+                errors.append('The weight must be greater than or equal to 0.01.')
+            elif dataset['weight'] > 50:
+                errors.append('The weight must be less than or equal to 50.')
+
+            if 'region' not in dataset:
+                errors.append('Region must be specified.')
+            elif not isinstance(dataset['region'], int):
+                errors.append('Region must be an integer.')
+
+            if 'delivery_hours' not in dataset:
+                errors.append('Delivery hours must be specified.')
+            elif not isinstance(dataset['delivery_hours'], list):
+                errors.append('Delivery hours must be an array.')
+            elif len(dataset['delivery_hours']) == 0:
+                errors.append('At least one delivery time slot is required.')
+
+            if len(errors) > 0:
+                unsuccessful.append({'id': dataset['order_id'], 'errors': errors})
                 continue
+
             order = Order(
                 order_id=dataset['order_id'],
                 weight=dataset['weight'],
@@ -64,6 +91,7 @@ class OrdersListResource(Resource):
             )
             session.add(order)
             successful.append({'id': dataset['order_id']})
+
         if len(unsuccessful) > 0:
             return make_response(jsonify({'validation_error': {'orders': unsuccessful}}), 400)
         else:

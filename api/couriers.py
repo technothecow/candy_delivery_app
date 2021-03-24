@@ -6,6 +6,8 @@ from data.db_session import create_session
 
 
 class CouriersResource(Resource):
+    """/couriers/{courier_id}"""
+
     def patch(self, courier_id):
         session = create_session()
         courier = session.query(Courier).filter(Courier.courier_id == courier_id).scalar()
@@ -37,6 +39,8 @@ class CouriersResource(Resource):
 
 
 class CouriersListResource(Resource):
+    """/couriers"""
+
     def post(self):
         args = request.json['data']
         session = create_session()
@@ -45,18 +49,27 @@ class CouriersListResource(Resource):
         for dataset in args:
 
             errors = list()
+
             if 'courier_type' not in dataset:
                 errors.append('Courier type must be specified.')
+            elif not isinstance(dataset['courier_type'], str):
+                errors.append('Courier type must be a string.')
             elif dataset['courier_type'] not in ('foot', 'car', 'bike'):
                 errors.append('Courier type must be one of following values: foot, car, bike.')
+
             if 'regions' not in dataset:
                 errors.append('Courier regions must be specified.')
+            elif not isinstance(dataset['regions'], list):
+                errors.append('Regions must be an array.')
             elif len(dataset['regions']) == 0:
                 errors.append('At least one region is required.')
+
             if 'working_hours' not in dataset:
                 errors.append('Courier working hours must be specified')
+            elif not isinstance(dataset['working_hours'], list):
+                errors.append('Working hours must be a string.')
             elif len(dataset['working_hours']) == 0:
-                errors.append('At least one time slot is required.')
+                errors.append('At least one working time slot is required.')
 
             if len(errors) > 0:
                 unsuccessful.append({'id': dataset['courier_id'], 'errors': errors})
