@@ -16,5 +16,6 @@ class Courier(SqlAlchemyBase, SerializerMixin):
     earnings = Column(Integer)
     assign_time = Column(DateTime)
     transfers = Column(Integer, default=0)
+    courier_type_when_formed = Column(String)
 
     orders = relation('Order', back_populates='courier')
