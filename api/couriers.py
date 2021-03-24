@@ -18,7 +18,8 @@ class CouriersResource(Resource):
         for key in args:
             if len(args[key]) != 0:
                 if key == 'courier_type':
-                    courier.courier_type = args['courier_type']
+                    if args['courier_type'] in ('foot', 'bike', 'car'):
+                        courier.courier_type = args['courier_type']
                 elif key == 'regions':
                     courier.regions = args['regions']
                 elif key == 'working_hours':

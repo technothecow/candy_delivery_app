@@ -14,7 +14,7 @@ class Courier(SqlAlchemyBase, SerializerMixin):
     working_hours = Column(JSON, nullable=False)
     rating = Column(Float)
     earnings = Column(Integer)
-    assign_time = Column(DateTime)
+    assign_time = Column(String)
     transfers = Column(Integer, default=0)
     courier_type_when_formed = Column(String)
 

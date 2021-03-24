@@ -1,3 +1,6 @@
+import datetime
+
+
 def time_to_minutes(time):
     time = time.split(':')
     return int(time[0]) * 60 + int(time[1])
@@ -19,3 +22,7 @@ def check_time(time1, time2):
             if check_intervals(i, j) or check_intervals(j, i):
                 return True
     return False
+
+
+def format_date(date: datetime.datetime):
+    return date.isoformat('T')[:-4] + 'Z'
