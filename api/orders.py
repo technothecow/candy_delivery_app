@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import request, jsonify, make_response
+from flask import request
 from flask_restful import abort, Resource
 
 from api.logic import check_time
@@ -29,7 +29,6 @@ class OrdersAssignment(Resource):
                 courier.assign_time = None
                 courier.transfers += 1
             else:
-                print(jsonify({'orders': orders, 'assign_time': str(courier.assign_time)}))
                 return {'orders': orders, 'assign_time': str(courier.assign_time)}, 200
 
         for order in session.query(Order).filter(
@@ -39,11 +38,11 @@ class OrdersAssignment(Resource):
                 order.courier_id = courier.courier_id
 
         if len(orders) == 0:
-            return jsonify({'orders': orders}), 200
+            return {'orders': orders}, 200
 
         courier.assign_time = datetime.now()
         session.commit()
-        return jsonify({'orders': orders, 'assign_time': courier.assign_time}), 200
+        return {'orders': orders, 'assign_time': courier.assign_time}, 200
 
 
 class OrdersListResource(Resource):
@@ -93,7 +92,7 @@ class OrdersListResource(Resource):
             successful.append({'id': dataset['order_id']})
 
         if len(unsuccessful) > 0:
-            return make_response(jsonify({'validation_error': {'orders': unsuccessful}}), 400)
+            return {'validation_error': {'orders': unsuccessful}}, 400
         else:
             session.commit()
-            return make_response(jsonify({'orders': successful}), 201)
+            return {'orders': successful}, 201

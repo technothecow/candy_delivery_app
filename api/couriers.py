@@ -1,4 +1,4 @@
-from flask import request, jsonify, make_response
+from flask import request
 from flask_restful import abort, Resource
 
 from data.courier import Courier
@@ -85,7 +85,7 @@ class CouriersListResource(Resource):
             successful.append({'id': dataset['courier_id']})
 
         if len(unsuccessful) > 0:
-            return make_response(jsonify({'validation_error': {'couriers': unsuccessful}}), 400)
+            return {'validation_error': {'couriers': unsuccessful}}, 400
         else:
             session.commit()
-            return make_response(jsonify({'couriers': successful}), 201)
+            return {'couriers': successful}, 201
