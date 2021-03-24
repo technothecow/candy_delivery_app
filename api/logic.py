@@ -26,3 +26,10 @@ def check_time(time1, time2):
 
 def format_date(date: datetime.datetime):
     return date.isoformat('T')[:-4] + 'Z'
+
+
+def calculate_time(time1: str, time2: str) -> int:
+    time1 = datetime.datetime.fromisoformat(time1[:-4])
+    time2 = datetime.datetime.fromisoformat(time2[:-4])
+    time = time2 - time1
+    return time.seconds

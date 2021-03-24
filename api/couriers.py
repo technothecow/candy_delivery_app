@@ -38,6 +38,26 @@ class CouriersResource(Resource):
                 'regions': courier.regions,
                 'working_hours': courier.working_hours}, 200
 
+    def get(self, courier_id):
+        session = create_session()
+        courier = session.query(Courier).filter(Courier.courier_id == courier_id).scalar()
+        if courier is None:
+            abort(404)
+        assert isinstance(courier, Courier)
+        response = dict()
+        response['courier_id'] = courier.courier_id
+        response['courier_type'] = courier.courier_type
+        response['regions'] = courier.regions
+        response['working_hours'] = courier.working_hours
+
+        average_time = [courier.delivery_time_for_regions[i][1] / courier.delivery_time_for_regions[i][0]
+                        for i in courier.delivery_time_for_regions.keys()]
+        if len(average_time) > 0:
+            response['rating'] = (60 * 60 - min(min(average_time), 60 * 60)) / (60 * 60) * 5
+
+        response['earnings'] = courier.earnings
+        return response, 200
+
 
 class CouriersListResource(Resource):
     """/couriers"""

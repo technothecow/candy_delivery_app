@@ -13,9 +13,10 @@ class Courier(SqlAlchemyBase, SerializerMixin):
     regions = Column(JSON, nullable=False)
     working_hours = Column(JSON, nullable=False)
     rating = Column(Float)
-    earnings = Column(Integer)
     assign_time = Column(String)
-    transfers = Column(Integer, default=0)
     courier_type_when_formed = Column(String)
+    earnings = Column(Integer, default=0)
+    delivery_time_for_regions = Column(JSON, default={})
+    last_action_time = Column(String, default=None)
 
     orders = relation('Order', back_populates='courier')

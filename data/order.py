@@ -2,7 +2,7 @@ from sqlalchemy.orm import relation
 from sqlalchemy_serializer import SerializerMixin
 from .db_session import SqlAlchemyBase
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.sql.sqltypes import Integer, JSON, Float, Boolean
+from sqlalchemy.sql.sqltypes import Integer, JSON, Float, Boolean, String
 
 
 class Order(SqlAlchemyBase, SerializerMixin):
@@ -12,7 +12,7 @@ class Order(SqlAlchemyBase, SerializerMixin):
     weight = Column(Float)
     region = Column(Integer)
     delivery_hours = Column(JSON)
-    completed = Column(Boolean, default=0)
+    complete_time = Column(String, default=None)
 
     courier_id = Column(Integer, ForeignKey('couriers.courier_id'))
     courier = relation('Courier')

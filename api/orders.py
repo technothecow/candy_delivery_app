@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import request
 from flask_restful import abort, Resource
 
-from api.logic import check_time, format_date
+from api.logic import check_time, format_date, calculate_time
 from data.courier import Courier
 from data.order import Order
 from data.db_session import create_session
@@ -20,14 +20,16 @@ class OrdersAssignment(Resource):
             abort(400)
 
         orders = list()
+        assert isinstance(courier, Courier)
 
         if courier.assign_time is not None:
             for order in courier.orders:
-                if order.completed == 0:
+                if order.complete_time is None:
                     orders.append({'id': order.order_id})
             if len(orders) == 0:
+                payday_table = {'foot': 2, 'bike': 5, 'car': 9}
+                courier.earnings += 500 * payday_table[courier.courier_type_when_formed]
                 courier.assign_time = None
-                courier.transfers += 1
                 courier.courier_type_when_formed = None
                 session.commit()
             else:
@@ -36,8 +38,8 @@ class OrdersAssignment(Resource):
         capacity_table = {'foot': 10, 'bike': 15, 'car': 50}
         capacity = capacity_table[courier.courier_type]
 
-        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id))\
-                .filter(Order.completed == 0):
+        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id)) \
+                .filter(Order.complete_time == None):
             if check_time(courier.working_hours, order.delivery_hours) and order.region in courier.regions and \
                     order.weight <= capacity:
                 orders.append({'id': order.order_id})
@@ -47,6 +49,7 @@ class OrdersAssignment(Resource):
             return {'orders': orders}, 200
 
         courier.assign_time = format_date(datetime.now())
+        courier.last_action_time = courier.assign_time
         courier.courier_type_when_formed = courier.courier_type
         session.commit()
         return {'orders': orders, 'assign_time': courier.assign_time}, 200
@@ -103,3 +106,34 @@ class OrdersListResource(Resource):
         else:
             session.commit()
             return {'orders': successful}, 201
+
+
+class OrdersCompletion(Resource):
+    """/orders/complete"""
+
+    def post(self):
+        order_id = request.json['order_id']
+        courier_id = request.json['courier_id']
+        complete_time = request.json['complete_time']
+        session = create_session()
+        order = session.query(Order).filter(Order.order_id == order_id).scalar()
+        if order is None or order.courier_id != courier_id:
+            abort(400)
+        assert isinstance(order, Order)
+        assert isinstance(order.courier, Courier)
+        courier = order.courier
+
+        if order.region not in courier.delivery_time_for_regions.keys():
+            courier.delivery_time_for_regions[order.region] = list()
+            courier.delivery_time_for_regions[order.region].append(1)
+            courier.delivery_time_for_regions[order.region].append(
+                calculate_time(courier.last_action_time, complete_time))
+        else:
+            courier.delivery_time_for_regions[order.region][0] += 1
+            courier.delivery_time_for_regions[order.region][1] += calculate_time(courier.last_action_time,
+                                                                                 complete_time)
+
+        courier.last_action_time = complete_time
+        order.complete_time = complete_time
+        session.commit()
+        return {'order_id': order_id}, 200
