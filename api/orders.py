@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import request
 from flask_restful import abort, Resource
 
-from api.logic import check_time, format_date, calculate_time, validate_time_interval
+from api.logic import check_time, format_date, calculate_time, validate_time_interval, calculate_capacity
 from data.courier import Courier
 from data.order import Order
 from data.db_session import create_session
@@ -35,15 +35,16 @@ class OrdersAssignment(Resource):
             else:
                 return {'orders': orders, 'assign_time': courier.assign_time}, 200
 
-        capacity_table = {'foot': 10, 'bike': 15, 'car': 50}
-        capacity = capacity_table[courier.courier_type]
+        capacity = calculate_capacity(courier.courier_type)
 
-        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id)) \
-                .filter(Order.complete_time == None):
-            if check_time(courier.working_hours, order.delivery_hours) and order.region in courier.regions and \
-                    order.weight <= capacity:
+        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id))\
+                .filter(Order.region.in_(courier.regions)).order_by(Order.weight):
+            if capacity - order.weight < 0:
+                break
+            if check_time(courier.working_hours, order.delivery_hours):
                 orders.append({'id': order.order_id})
                 order.courier_id = courier.courier_id
+                capacity -= order.weight
 
         if len(orders) == 0:
             return {'orders': orders}, 200

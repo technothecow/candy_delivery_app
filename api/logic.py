@@ -44,3 +44,8 @@ def validate_time_interval(time_interval):
     if not (0 <= start[0] <= 24 and 0 <= end[0] <= 24 and 0 <= start[1] <= 60 and 0 <= end[1] <= 60):
         return 'There are only 24 hours in a day and 60 minutes in an hour.'
     return None
+
+
+def calculate_capacity(courier_type):
+    capacity_table = {'foot': 10, 'bike': 15, 'car': 50}
+    return capacity_table[courier_type]
