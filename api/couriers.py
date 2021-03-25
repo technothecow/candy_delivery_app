@@ -68,7 +68,7 @@ class CouriersResource(Resource):
         courier = session.query(Courier).filter(Courier.courier_id == courier_id).scalar()
         if courier is None:
             abort(404)
-        assert isinstance(courier, Courier)
+
         response = dict()
         response['courier_id'] = courier.courier_id
         response['courier_type'] = courier.courier_type

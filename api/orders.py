@@ -20,7 +20,6 @@ class OrdersAssignment(Resource):
             abort(400)
 
         orders = list()
-        assert isinstance(courier, Courier)
 
         if courier.assign_time is not None:
             for order in courier.orders:
@@ -38,10 +37,10 @@ class OrdersAssignment(Resource):
         capacity = calculate_capacity(courier.courier_type)
 
         for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id))\
-                .filter(Order.region.in_(courier.regions)).order_by(Order.weight):
+                .order_by(Order.weight).all():
             if capacity - order.weight < 0:
                 break
-            if check_time(courier.working_hours, order.delivery_hours):
+            if check_time(courier.working_hours, order.delivery_hours) and order.region in courier.regions:
                 orders.append({'id': order.order_id})
                 order.courier_id = courier.courier_id
                 capacity -= order.weight
@@ -70,7 +69,7 @@ class OrdersListResource(Resource):
 
             if 'weight' not in dataset:
                 errors.append('Weight must be specified.')
-            elif not isinstance(dataset['weight'], float):
+            elif not (isinstance(dataset['weight'], float) or isinstance(dataset['weight'], int)):
                 errors.append('Weight must be float.')
             elif dataset['weight'] < 0.01:
                 errors.append('The weight must be greater than or equal to 0.01.')
@@ -125,8 +124,7 @@ class OrdersCompletion(Resource):
         order = session.query(Order).filter(Order.order_id == order_id).scalar()
         if order is None or order.courier_id != courier_id:
             abort(400)
-        assert isinstance(order, Order)
-        assert isinstance(order.courier, Courier)
+
         courier = order.courier
 
         if order.region not in courier.delivery_time_for_regions.keys():
