@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import request
 from flask_restful import abort, Resource
 
-from api.logic import check_time, format_date, calculate_time
+from api.logic import check_time, format_date, calculate_time, validate_time_interval
 from data.courier import Courier
 from data.order import Order
 from data.db_session import create_session
@@ -78,8 +78,8 @@ class OrdersListResource(Resource):
 
             if 'region' not in dataset:
                 errors.append('Region must be specified.')
-            elif not isinstance(dataset['region'], int):
-                errors.append('Region must be an integer.')
+            elif not isinstance(dataset['region'], int) or dataset['region'] < 0:
+                errors.append('Region must be positive integer.')
 
             if 'delivery_hours' not in dataset:
                 errors.append('Delivery hours must be specified.')
@@ -87,6 +87,11 @@ class OrdersListResource(Resource):
                 errors.append('Delivery hours must be an array.')
             elif len(dataset['delivery_hours']) == 0:
                 errors.append('At least one delivery time slot is required.')
+            else:
+                for time_interval in dataset['delivery_hours']:
+                    result = validate_time_interval(time_interval)
+                    if result is not None:
+                        errors.append(result)
 
             if len(errors) > 0:
                 unsuccessful.append({'id': dataset['order_id'], 'errors': errors})

@@ -1,6 +1,7 @@
 from flask import request
 from flask_restful import abort, Resource
 
+from api.logic import validate_time_interval
 from data.courier import Courier
 from data.db_session import create_session
 
@@ -84,6 +85,9 @@ class CouriersListResource(Resource):
                 errors.append('Regions must be an array.')
             elif len(dataset['regions']) == 0:
                 errors.append('At least one region is required.')
+            else:
+                if any([True for i in dataset['regions'] if not (isinstance(i, int) and i >= 0)]):
+                    errors.append('Regions must be positive integers.')
 
             if 'working_hours' not in dataset:
                 errors.append('Courier working hours must be specified')
@@ -91,6 +95,11 @@ class CouriersListResource(Resource):
                 errors.append('Working hours must be a string.')
             elif len(dataset['working_hours']) == 0:
                 errors.append('At least one working time slot is required.')
+            else:
+                for time_interval in dataset['working_hours']:
+                    result = validate_time_interval(time_interval)
+                    if result is not None:
+                        errors.append(result)
 
             if len(errors) > 0:
                 unsuccessful.append({'id': dataset['courier_id'], 'errors': errors})

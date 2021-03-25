@@ -33,3 +33,14 @@ def calculate_time(time1: str, time2: str) -> int:
     time2 = datetime.datetime.fromisoformat(time2[:-4])
     time = time2 - time1
     return time.seconds
+
+
+def validate_time_interval(time_interval):
+    try:
+        start, end = time_interval.split('-')
+        start, end = list(map(int, start.split(':'))), list(map(int, end.split(':')))
+    except Exception:
+        return 'Wrong time interval format. Correct usage: "HH:MM-HH:MM"'
+    if not (0 <= start[0] <= 24 and 0 <= end[0] <= 24 and 0 <= start[1] <= 60 and 0 <= end[1] <= 60):
+        return 'There are only 24 hours in a day and 60 minutes in an hour.'
+    return None
