@@ -519,3 +519,80 @@ class TestOrdersAssignPost:
         })
         request = requests.post(ADDRESS + 'orders/assign', json={'courier_id': 600})
         assert request.json()['orders'] == [{'id': 303}, {'id': 304}, {'id': 302}]
+
+
+class TestOrdersCompletePost:
+    def test_correct_input(self):
+        requests.post(ADDRESS + 'couriers', json={
+            "data": [
+                {
+                    "courier_id": 5000,
+                    "courier_type": "car",
+                    "regions": [555],
+                    "working_hours": ["09:00-18:00"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders', json={
+            "data": [
+                {
+                    "order_id": 5551,
+                    "weight": 0.23,
+                    "region": 555,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 5552,
+                    "weight": 15,
+                    "region": 555,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 5553,
+                    "weight": 0.01,
+                    "region": 555,
+                    "delivery_hours": ["09:00-12:00", "16:00-21:30"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders/assign', json={
+            "courier_id": 5000
+        })
+        request = requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 5000,
+            "order_id": 5551,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        })
+        assert (request.status_code, request.json()) == (200, {'order_id': 5551})
+
+    def test_nonexistent_courier_id(self):
+        request = requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 94535,
+            "order_id": 5551,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        })
+        assert request.status_code == 400
+
+    def test_nonexistent_order_id(self):
+        request = requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 5000,
+            "order_id": 35345,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        })
+        assert request.status_code == 400
+
+    def test_non_assigned_order(self):
+        request = requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 5000,
+            "order_id": 1,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        })
+        assert request.status_code == 400
+
+    def test_idempotency(self):
+        request = requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 5000,
+            "order_id": 5551,
+            "complete_time": "2021-01-10T10:33:01.42Z"
+        })
+        assert (request.status_code, request.json()) == (200, {'order_id': 5551})
