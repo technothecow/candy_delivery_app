@@ -36,6 +36,8 @@ def calculate_time(time1: str, time2: str) -> int:
 
 
 def validate_time_interval(time_interval):
+    if len(time_interval) != 11:
+        return 'Wrong time interval format. Correct usage: "HH:MM-HH:MM"'
     try:
         start, end = time_interval.split('-')
         start, end = list(map(int, start.split(':'))), list(map(int, end.split(':')))

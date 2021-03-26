@@ -67,6 +67,9 @@ class OrdersListResource(Resource):
 
             errors = list()
 
+            if not isinstance(dataset['order_id'], int) or dataset['order_id'] < 1:
+                errors.append('Order ID must be positive integer.')
+
             if 'weight' not in dataset:
                 errors.append('Weight must be specified.')
             elif not (isinstance(dataset['weight'], float) or isinstance(dataset['weight'], int)):
@@ -99,7 +102,7 @@ class OrdersListResource(Resource):
 
             order = Order(
                 order_id=dataset['order_id'],
-                weight=dataset['weight'],
+                weight=float(dataset['weight']),
                 region=dataset['region'],
                 delivery_hours=dataset['delivery_hours']
             )
@@ -117,9 +120,12 @@ class OrdersCompletion(Resource):
     """/orders/complete"""
 
     def post(self):
-        order_id = request.json['order_id']
-        courier_id = request.json['courier_id']
-        complete_time = request.json['complete_time']
+        try:
+            order_id = request.json['order_id']
+            courier_id = request.json['courier_id']
+            complete_time = request.json['complete_time']
+        except KeyError:
+            abort(400)
         session = create_session()
         order = session.query(Order).filter(Order.order_id == order_id).scalar()
         if order is None or order.courier_id != courier_id:

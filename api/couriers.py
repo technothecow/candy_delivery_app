@@ -96,6 +96,9 @@ class CouriersListResource(Resource):
 
             errors = list()
 
+            if not isinstance(dataset['courier_id'], int) or dataset['courier_id'] < 1:
+                errors.append('Courier ID must be positive integer.')
+
             if 'courier_type' not in dataset:
                 errors.append('Courier type must be specified.')
             elif not isinstance(dataset['courier_type'], str):

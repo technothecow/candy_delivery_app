@@ -201,13 +201,13 @@ class TestCouriersPatch:
         requests.post(ADDRESS + 'orders', json={
             "data": [
                 {
-                    "order_id": 0,
+                    "order_id": 50,
                     "weight": 40,
                     "region": 2,
                     "delivery_hours": ["01:00-23:00"]
                 },
                 {
-                    "order_id": 1,
+                    "order_id": 51,
                     "weight": 4,
                     "region": 2,
                     "delivery_hours": ["01:00-23:00"]
@@ -222,4 +222,199 @@ class TestCouriersPatch:
         request = requests.post(ADDRESS + 'orders/assign', json={
             'courier_id': 5
         })
-        assert request.json()['orders'] == [{'id': 1}]
+        assert request.json()['orders'] == [{'id': 51}]
+
+
+class TestOrdersPost:
+    def test_correct_input(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 0.23,
+                    "region": 12,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 12,
+                    "weight": 15,
+                    "region": 1,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 13,
+                    "weight": 0.01,
+                    "region": 22,
+                    "delivery_hours": ["09:00-12:00", "16:00-21:30"]
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (201, {"orders": [{"id": 11}, {"id": 12}, {"id": 13}]})
+
+    def test_empty_field(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 0.23,
+                    "region": 12,
+                    "delivery_hours": []
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400,
+            {'validation_error': {'orders': [{'id': 11, 'errors': ['At least one delivery time slot is required.']}]}})
+
+    def test_absent_field(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 0.23,
+                    "region": 12
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400, {'validation_error': {'orders': [{'id': 11, 'errors': ['Delivery hours must be specified.']}]}})
+
+    def test_wrong_datatype(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 0.23,
+                    "region": 12,
+                    "delivery_hours": '13:00-16:00'
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400, {'validation_error': {'orders': [{'id': 11, 'errors': ['Delivery hours must be an array.']}]}})
+
+    def test_limit_exceeding_weight_value(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 55,
+                    "region": 12,
+                    "delivery_hours": ['13:00-16:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400,
+            {'validation_error': {'orders': [{'id': 11, 'errors': ['The weight must be less than or equal to 50.']}]}})
+
+    def test_below_limit_weight_value(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 11,
+                    "weight": 0.001,
+                    "region": 12,
+                    "delivery_hours": ['13:00-16:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400, {'validation_error': {
+                'orders': [{'id': 11, 'errors': ['The weight must be greater than or equal to 0.01.']}]}})
+
+    def test_minimal_weight_value(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 111,
+                    "weight": 0.01,
+                    "region": 12,
+                    "delivery_hours": ['13:00-16:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (201, {'orders': [{'id': 111}]})
+
+    def test_maximum_weight_value(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 112,
+                    "weight": 50,
+                    "region": 12,
+                    "delivery_hours": ['13:00-16:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (201, {'orders': [{'id': 112}]})
+
+    def test_wrong_time_interval(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 111,
+                    "weight": 0.01,
+                    "region": 12,
+                    "delivery_hours": ['13:00-25:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (400, {'validation_error': {
+            'orders': [{'id': 111, 'errors': ['There are only 24 hours in a day and 60 minutes in an hour.']}]}})
+
+    def test_wrong_time_interval_formatting(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 111,
+                    "weight": 0.01,
+                    "region": 12,
+                    "delivery_hours": ['13:00-23:00', '7:00-12:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (400, {'validation_error': {
+            'orders': [{'id': 111, 'errors': ['Wrong time interval format. Correct usage: "HH:MM-HH:MM"']}]}})
+
+    def test_wrong_id_datatype(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 'one',
+                    "weight": 1,
+                    "region": 12,
+                    "delivery_hours": ['13:00-23:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400, {'validation_error': {'orders': [{'id': 'one', 'errors': ['Order ID must be positive integer.']}]}})
+
+    def test_negative_id(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": -1,
+                    "weight": 1,
+                    "region": 12,
+                    "delivery_hours": ['13:00-23:00']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (
+            400, {'validation_error': {'orders': [{'id': -1, 'errors': ['Order ID must be positive integer.']}]}})
+
+    def test_multiple_errors(self):
+        request = requests.post(ADDRESS + '/orders', json={
+            "data": [
+                {
+                    "order_id": 0,
+                    "region": 'two',
+                    "delivery_hours": ['all day']
+                }
+            ]
+        })
+        assert (request.status_code, request.json()) == (400, {'validation_error': {'orders': [{'id': 0, 'errors': [
+            'Order ID must be positive integer.', 'Weight must be specified.', 'Region must be positive integer.',
+            'Wrong time interval format. Correct usage: "HH:MM-HH:MM"']}]}})
