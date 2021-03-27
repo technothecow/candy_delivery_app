@@ -49,7 +49,7 @@ class OrdersAssignment(Resource):
         if len(orders) == 0:
             return {'orders': orders}, 200
 
-        courier.assign_time = format_date(datetime.now())
+        courier.assign_time = format_date(datetime.utcnow())
         courier.last_action_time = courier.assign_time
         courier.courier_type_when_formed = courier.courier_type
         session.commit()
@@ -146,7 +146,7 @@ class OrdersCompletion(Resource):
         else:
             courier.delivery_time_for_regions[str(order.region)][0] += 1
             courier.delivery_time_for_regions[str(order.region)][1] += calculate_time(courier.last_action_time,
-                                                                                 complete_time)
+                                                                                      complete_time)
 
         courier.last_action_time = complete_time
         order.complete_time = complete_time

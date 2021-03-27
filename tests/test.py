@@ -6,7 +6,7 @@ def format_date(date: datetime.datetime):
     return date.isoformat('T')[:-4] + 'Z'
 
 
-ADDRESS = 'http://127.0.0.1:5000/'
+ADDRESS = 'http://178.154.194.143:8080/'
 
 
 class TestCouriersPost:
@@ -633,8 +633,8 @@ class TestCouriersGet:
                 }
             ]
         })
-        a = requests.post(ADDRESS + 'orders/assign', json={'courier_id': 9})
-        dt = datetime.datetime.now() + datetime.timedelta(minutes=12)
+        requests.post(ADDRESS + 'orders/assign', json={'courier_id': 9})
+        dt = datetime.datetime.utcnow() + datetime.timedelta(minutes=12)
         requests.post(ADDRESS + 'orders/complete', json={'courier_id': 9, 'order_id': 951,
                                                          'complete_time': format_date(dt)})
         request = requests.get(ADDRESS + 'couriers/9')
@@ -654,7 +654,7 @@ class TestCouriersGet:
             ]
         })
         requests.post(ADDRESS + 'orders/assign', json={'courier_id': 9})
-        dt = datetime.datetime.now() + datetime.timedelta(minutes=20)
+        dt = datetime.datetime.utcnow() + datetime.timedelta(minutes=20)
         requests.post(ADDRESS + 'orders/complete', json={'courier_id': 9, 'order_id': 955,
                                                          'complete_time': format_date(dt)})
         request = requests.get(ADDRESS + 'couriers/9')
@@ -696,7 +696,7 @@ class TestCouriersGet:
         requests.post(ADDRESS + 'orders/assign', json={
             'courier_id': 1337
         })
-        dt = datetime.datetime.now()
+        dt = datetime.datetime.utcnow()
         dt += datetime.timedelta(minutes=24)
         requests.post(ADDRESS + 'orders/complete', json={
             "courier_id": 1337,
@@ -728,7 +728,7 @@ class TestCouriersGet:
         requests.post(ADDRESS + 'orders/assign', json={
             'courier_id': 1337
         })
-        dt = datetime.datetime.now()
+        dt = datetime.datetime.utcnow()
         dt += datetime.timedelta(minutes=10)
         requests.post(ADDRESS + 'orders/complete', json={
             "courier_id": 1337,
