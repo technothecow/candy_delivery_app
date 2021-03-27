@@ -3,7 +3,8 @@ from datetime import datetime
 from flask import request
 from flask_restful import abort, Resource
 
-from api.logic import check_time, format_date, calculate_time, validate_time_interval, calculate_capacity
+from api.logic import check_time, format_date, calculate_time, validate_time_interval, calculate_capacity, \
+    end_session_for_courier
 from data.courier import Courier
 from data.order import Order
 from data.db_session import create_session
@@ -13,7 +14,10 @@ class OrdersAssignment(Resource):
     """/orders/assign"""
 
     def post(self):
-        courier_id = request.json['courier_id']
+        try:
+            courier_id = request.json['courier_id']
+        except KeyError:
+            abort(400)
         session = create_session()
         courier = session.query(Courier).filter(Courier.courier_id == courier_id).scalar()
         if courier is None:
@@ -26,18 +30,15 @@ class OrdersAssignment(Resource):
                 if order.complete_time is None:
                     orders.append({'id': order.order_id})
             if len(orders) == 0:
-                payday_table = {'foot': 2, 'bike': 5, 'car': 9}
-                courier.earnings += 500 * payday_table[courier.courier_type_when_formed]
-                courier.assign_time = None
-                courier.courier_type_when_formed = None
+                end_session_for_courier(courier)
                 session.commit()
             else:
                 return {'orders': orders, 'assign_time': courier.assign_time}, 200
 
         capacity = calculate_capacity(courier.courier_type)
 
-        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id))\
-                .order_by(Order.weight).all():
+        for order in session.query(Order).filter((Order.courier_id == None) | (Order.courier_id == courier.courier_id)) \
+                .order_by(Order.weight).filter(Order.complete_time == None).all():
             if capacity - order.weight < 0:
                 break
             if check_time(courier.working_hours, order.delivery_hours) and order.region in courier.regions:
@@ -59,7 +60,10 @@ class OrdersListResource(Resource):
     """/orders"""
 
     def post(self):
-        args = request.json['data']
+        try:
+            args = request.json['data']
+        except KeyError:
+            abort(400)
         session = create_session()
         successful = list()
         unsuccessful = list()
@@ -120,6 +124,7 @@ class OrdersCompletion(Resource):
     """/orders/complete"""
 
     def post(self):
+        order_id, courier_id, complete_time = None, None, None
         try:
             order_id = request.json['order_id']
             courier_id = request.json['courier_id']
@@ -133,17 +138,21 @@ class OrdersCompletion(Resource):
 
         courier = order.courier
 
-        if order.region not in courier.delivery_time_for_regions.keys():
+        if str(order.region) not in courier.delivery_time_for_regions.keys():
             courier.delivery_time_for_regions[order.region] = list()
             courier.delivery_time_for_regions[order.region].append(1)
             courier.delivery_time_for_regions[order.region].append(
                 calculate_time(courier.last_action_time, complete_time))
         else:
-            courier.delivery_time_for_regions[order.region][0] += 1
-            courier.delivery_time_for_regions[order.region][1] += calculate_time(courier.last_action_time,
+            courier.delivery_time_for_regions[str(order.region)][0] += 1
+            courier.delivery_time_for_regions[str(order.region)][1] += calculate_time(courier.last_action_time,
                                                                                  complete_time)
 
         courier.last_action_time = complete_time
         order.complete_time = complete_time
+
+        if len([True for order in courier.orders if order.complete_time is None]) == 0:
+            end_session_for_courier(courier)
+
         session.commit()
         return {'order_id': order_id}, 200

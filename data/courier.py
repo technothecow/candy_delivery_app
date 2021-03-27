@@ -1,4 +1,5 @@
 from sqlalchemy.orm import relation
+from sqlalchemy_json import mutable_json_type
 from sqlalchemy_serializer import SerializerMixin
 from .db_session import SqlAlchemyBase
 from sqlalchemy import Column
@@ -16,7 +17,7 @@ class Courier(SqlAlchemyBase, SerializerMixin):
     assign_time = Column(String)
     courier_type_when_formed = Column(String)
     earnings = Column(Integer, default=0)
-    delivery_time_for_regions = Column(JSON, default={})
+    delivery_time_for_regions = Column(mutable_json_type(dbtype=JSON, nested=True), default={})
     last_action_time = Column(String, default=None)
 
     orders = relation('Order', back_populates='courier')

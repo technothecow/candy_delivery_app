@@ -1,4 +1,11 @@
+import datetime
+
 import requests
+
+
+def format_date(date: datetime.datetime):
+    return date.isoformat('T')[:-4] + 'Z'
+
 
 ADDRESS = 'http://127.0.0.1:5000/'
 
@@ -596,3 +603,147 @@ class TestOrdersCompletePost:
             "complete_time": "2021-01-10T10:33:01.42Z"
         })
         assert (request.status_code, request.json()) == (200, {'order_id': 5551})
+
+
+class TestCouriersGet:
+    def test_correct_input_without_rating(self):
+        requests.post(ADDRESS + 'couriers', json={
+            "data": [
+                {
+                    "courier_id": 9,
+                    "courier_type": "foot",
+                    "regions": [1],
+                    "working_hours": ["11:35-14:05", "09:00-11:00"]
+                }
+            ]
+        })
+        request = requests.get(ADDRESS + 'couriers/9')
+        assert (request.status_code, request.json()) == (200, {'courier_id': 9, 'courier_type': 'foot',
+                                                               'regions': [1],
+                                                               'working_hours': ['11:35-14:05', '09:00-11:00'],
+                                                               'earnings': 0})
+
+    def test_correct_input_with_rating(self):
+        requests.post(ADDRESS + 'orders', json={
+            "data": [
+                {
+                    "order_id": 951,
+                    "weight": 1,
+                    "region": 1,
+                    "delivery_hours": ["09:00-18:00"]
+                }
+            ]
+        })
+        a = requests.post(ADDRESS + 'orders/assign', json={'courier_id': 9})
+        dt = datetime.datetime.now() + datetime.timedelta(minutes=12)
+        requests.post(ADDRESS + 'orders/complete', json={'courier_id': 9, 'order_id': 951,
+                                                         'complete_time': format_date(dt)})
+        request = requests.get(ADDRESS + 'couriers/9')
+        assert (request.status_code, request.json()) == (200, {'courier_id': 9, 'courier_type': 'foot', 'regions': [1],
+                                                               'working_hours': ['11:35-14:05', '09:00-11:00'],
+                                                               'rating': 4.0, 'earnings': 1000})
+
+    def test_correct_input_with_change_of_rating(self):
+        requests.post(ADDRESS + 'orders', json={
+            "data": [
+                {
+                    "order_id": 955,
+                    "weight": 1,
+                    "region": 1,
+                    "delivery_hours": ["09:00-18:00"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders/assign', json={'courier_id': 9})
+        dt = datetime.datetime.now() + datetime.timedelta(minutes=20)
+        requests.post(ADDRESS + 'orders/complete', json={'courier_id': 9, 'order_id': 955,
+                                                         'complete_time': format_date(dt)})
+        request = requests.get(ADDRESS + 'couriers/9')
+        assert (request.status_code, request.json()) == (200, {'courier_id': 9, 'courier_type': 'foot', 'regions': [1],
+                                                               'working_hours': ['11:35-14:05', '09:00-11:00'],
+                                                               'rating': 3.67, 'earnings': 2000})
+
+    def test_nonexistent_courier_id(self):
+        request = requests.get(ADDRESS + 'couriers/324234')
+        assert request.status_code == 404
+
+    def test_complicated_case_with_different_regions(self):
+        requests.post(ADDRESS + 'couriers', json={
+            "data": [
+                {
+                    "courier_id": 1337,
+                    "courier_type": "car",
+                    "regions": [73, 733],
+                    "working_hours": ["00:00-24:00"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders', json={
+            "data": [
+                {
+                    "order_id": 21,
+                    "weight": 1,
+                    "region": 73,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 22,
+                    "weight": 30,
+                    "region": 73,
+                    "delivery_hours": ["09:00-18:00"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders/assign', json={
+            'courier_id': 1337
+        })
+        dt = datetime.datetime.now()
+        dt += datetime.timedelta(minutes=24)
+        requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 1337,
+            "order_id": 21,
+            "complete_time": format_date(dt)
+        })
+        requests.patch(ADDRESS + 'couriers/1337', json={
+            'courier_type': 'foot'
+        })
+        requests.post(ADDRESS + 'orders/assign', json={
+            'courier_id': 1337
+        })
+        requests.post(ADDRESS + 'orders', json={
+            "data": [
+                {
+                    "order_id": 23,
+                    "weight": 1,
+                    "region": 733,
+                    "delivery_hours": ["09:00-18:00"]
+                },
+                {
+                    "order_id": 24,
+                    "weight": 2,
+                    "region": 733,
+                    "delivery_hours": ["09:00-18:00"]
+                }
+            ]
+        })
+        requests.post(ADDRESS + 'orders/assign', json={
+            'courier_id': 1337
+        })
+        dt = datetime.datetime.now()
+        dt += datetime.timedelta(minutes=10)
+        requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 1337,
+            "order_id": 23,
+            "complete_time": format_date(dt)
+        })
+        requests.post(ADDRESS + 'orders/assign', json={
+            'courier_id': 1337
+        })
+        dt += datetime.timedelta(minutes=12)
+        requests.post(ADDRESS + 'orders/complete', json={
+            "courier_id": 1337,
+            "order_id": 24,
+            "complete_time": format_date(dt)
+        })
+        request = requests.get(ADDRESS + 'couriers/1337').json()
+        assert (request['earnings'], request['rating']) == (5500, 4.08)

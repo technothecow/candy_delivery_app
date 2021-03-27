@@ -1,7 +1,7 @@
 from flask import request
 from flask_restful import abort, Resource
 
-from api.logic import validate_time_interval, check_time, calculate_capacity
+from api.logic import validate_time_interval, check_time, calculate_capacity, end_session_for_courier
 from data.courier import Courier
 from data.db_session import create_session
 from data.order import Order
@@ -52,6 +52,11 @@ class CouriersResource(Resource):
         for order in orders:
             if not check_time(courier.working_hours, order.delivery_hours) or order.region not in courier.regions:
                 order.courier_id = None
+
+        if len(orders) != 0 and len(session.query(Order).filter(Order.courier_id == courier_id).filter(
+                Order.complete_time == None).all()) == 0:
+            end_session_for_courier(courier)
+
         try:
             session.commit()
         except Exception as e:
@@ -88,7 +93,10 @@ class CouriersListResource(Resource):
     """/couriers"""
 
     def post(self):
-        args = request.json['data']
+        try:
+            args = request.json['data']
+        except KeyError:
+            abort(400)
         session = create_session()
         successful = list()
         unsuccessful = list()

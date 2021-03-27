@@ -51,3 +51,10 @@ def validate_time_interval(time_interval):
 def calculate_capacity(courier_type):
     capacity_table = {'foot': 10, 'bike': 15, 'car': 50}
     return capacity_table[courier_type]
+
+
+def end_session_for_courier(courier):
+    payday_table = {'foot': 2, 'bike': 5, 'car': 9}
+    courier.earnings += 500 * payday_table[courier.courier_type_when_formed]
+    courier.assign_time = None
+    courier.courier_type_when_formed = None
