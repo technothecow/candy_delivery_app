@@ -16,4 +16,4 @@ if __name__ == '__main__':
     api.add_resource(OrdersListResource, '/orders')
     api.add_resource(OrdersAssignment, '/orders/assign')
     api.add_resource(OrdersCompletion, '/orders/complete')
-    app.run()
+    serve(app, host='0.0.0.0', port=8080)

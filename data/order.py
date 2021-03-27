@@ -1,11 +1,10 @@
 from sqlalchemy.orm import relation
-from sqlalchemy_serializer import SerializerMixin
 from .db_session import SqlAlchemyBase
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.sql.sqltypes import Integer, JSON, Float, Boolean, String
+from sqlalchemy.sql.sqltypes import Integer, JSON, Float, String
 
 
-class Order(SqlAlchemyBase, SerializerMixin):
+class Order(SqlAlchemyBase):
     __tablename__ = 'orders'
 
     order_id = Column(Integer, primary_key=True)

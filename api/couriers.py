@@ -53,7 +53,7 @@ class CouriersResource(Resource):
             if not check_time(courier.working_hours, order.delivery_hours) or order.region not in courier.regions:
                 order.courier_id = None
 
-        if len(orders) != 0 and len(session.query(Order).filter(Order.courier_id == courier_id).filter(
+        if len(orders) > 0 and len(session.query(Order).filter(Order.courier_id == courier_id).filter(
                 Order.complete_time == None).all()) == 0:
             end_session_for_courier(courier)
 
